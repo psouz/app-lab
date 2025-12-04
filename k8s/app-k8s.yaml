@@ -1,0 +1,70 @@
+ion: apps/v1
+kind: Deployment
+metadata:
+    name: ph-app
+      labels:
+            app: ph-app
+            spec:
+                replicas: 1
+                  selector:
+                        matchLabels:
+                                app: ph-app
+                                  template:
+                                        metadata:
+                                                labels:
+                                                          app: ph-app
+                                                              spec:
+                                                                      containers:
+                                                                                - name: ph-app
+                                                                                          image: psouz/app-lab:latest  # ajuste aqui se a imagem tiver outro nome
+                                                                                                    imagePullPolicy: Always
+                                                                                                              ports:
+                                                                                                                            - containerPort: 3000
+                                                                                                                                      resources:
+                                                                                                                                                    requests:
+                                                                                                                                                                    cpu: "50m"
+                                                                                                                                                                                  memory: "64Mi"
+                                                                                                                                                                                              limits:
+                                                                                                                                                                                                              cpu: "250m"
+                                                                                                                                                                                                                            memory: "256Mi"
+
+                                                                                                                            ---
+                                                                                                              apiVersion: v1
+                                                                                                              kind: Service
+                                                                                                              metadata:
+                                                                                                                  name: ph-app-svc
+                                                                                                                    labels:
+                                                                                                                          app: ph-app
+                                                                                                                          spec:
+                                                                                                                              type: NodePort
+                                                                                                                                selector:
+                                                                                                                                      app: ph-app
+                                                                                                                                        ports:
+                                                                                                                                              - name: http
+                                                                                                                                                    port: 3000        # porta do serviço dentro do cluster
+                                                                                                                                                          targetPort: 3000  # porta do container
+                                                                                                                                                                nodePort: 30080   # porta exposta no node (já combinando com seu SG)
+                                                                                                                                                                      protocol: TCP
+
+                                                                                                                                              ---
+                                                                                                                                        apiVersion: networking.k8s.io/v1
+                                                                                                                                        kind: Ingress
+                                                                                                                                        metadata:
+                                                                                                                                            name: ph-app-ingress
+                                                                                                                                              labels:
+                                                                                                                                                    app: ph-app
+                                                                                                                                                      annotations:
+                                                                                                                                                            traefik.ingress.kubernetes.io/router.entrypoints: web
+                                                                                                                                                            spec:
+                                                                                                                                                                rules:
+                                                                                                                                                                      - host: app1.phlab.local
+                                                                                                                                                                            http:
+                                                                                                                                                                                      paths:
+                                                                                                                                                                                                  - path: /
+                                                                                                                                                                                                              pathType: Prefix
+                                                                                                                                                                                                                          backend:
+                                                                                                                                                                                                                                          service:
+                                                                                                                                                                                                                                                            name: ph-app-svc
+                                                                                                                                                                                                                                                                            port:
+                                                                                                                                                                                                                                                                                                number: 3000
+
